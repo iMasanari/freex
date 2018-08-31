@@ -7,17 +7,14 @@ const initState = {
 
 type State = typeof initState
 
-const view = (state: State, setState: (state: State) => void) => {
-  const increment = () => {
-    setState({ count: state.count + 1 })
-  }
+const increment = () =>
+  (state: State) =>
+    ({ count: state.count + 1 })
 
-  return (
-    <div>
-      <span>{state.count}</span>
-      <button onclick={increment}>+</button>
-    </div>
-  )
-}
+const view = (state: State) =>
+  <div>
+    <span>{state.count}</span>
+    <button onclick={increment}>+</button>
+  </div>
 
 app(initState, view, document.getElementById('app')!)

@@ -2,10 +2,38 @@ import { VNode, VText, ChildNode } from './h'
 
 type AnyObject = Record<string, any>
 
+type ElementWithEvent = Element & { _events?: Record<string, any> }
+type EventProxy = (event: Event) => void
+
 const isVText = (node: ChildNode): node is VText =>
   node.type == null
 
-const setAttribute = ($target: Element, name: string, value: any) => {
+const setEvent = ($target: ElementWithEvent, name: string, value: any, eventProxy: EventProxy) => {
+  const eventName = name.slice(2).toLowerCase()
+  let oldValue: any
+
+  if ($target._events) {
+    oldValue = $target._events[eventName]
+  } else {
+    $target._events = {}
+  }
+
+  $target._events[eventName] = value
+
+  if (value) {
+    if (!oldValue) {
+      $target.addEventListener(eventName, eventProxy)
+    }
+  } else {
+    $target.removeEventListener(eventName, eventProxy)
+  }
+}
+
+const setAttribute = ($target: Element, name: string, value: any, eventProxy: EventProxy) => {
+  if (name[0] === 'o' || name[1] === 'n') {
+    setEvent($target, name, value, eventProxy)
+  }
+
   const isEmpty = value == null || value === false
 
   if (name in $target && name !== 'list') {
@@ -20,7 +48,7 @@ const setAttribute = ($target: Element, name: string, value: any) => {
   }
 }
 
-const updateAttributes = ($target: Element, attributes: AnyObject, oldAttributes: AnyObject) => {
+const updateAttributes = ($target: Element, attributes: AnyObject, oldAttributes: AnyObject, eventProxy: EventProxy) => {
   if (attributes === oldAttributes) return
 
   for (const name in { ...attributes, ...oldAttributes }) {
@@ -29,12 +57,12 @@ const updateAttributes = ($target: Element, attributes: AnyObject, oldAttributes
       : oldAttributes[name]
 
     if (attributes[name] !== oldValue) {
-      setAttribute($target, name, attributes[name])
+      setAttribute($target, name, attributes[name], eventProxy)
     }
   }
 }
 
-const createElement = (node: ChildNode<AnyObject>) => {
+const createElement = (node: ChildNode<AnyObject>, eventProxy: EventProxy) => {
   if (isVText(node)) {
     return document.createTextNode(node)
   }
@@ -42,53 +70,81 @@ const createElement = (node: ChildNode<AnyObject>) => {
   const $element = document.createElement(node.type)
 
   for (const name in node.attributes) {
-    setAttribute($element, name, node.attributes[name])
+    setAttribute($element, name, node.attributes[name], eventProxy)
   }
 
   node.children.forEach((child) => {
-    $element.appendChild(createElement(child))
+    $element.appendChild(createElement(child, eventProxy))
   })
 
   return $element
 }
 
-const updateElement = ($parent: Element, $element: Element, node: ChildNode, oldNode: ChildNode | undefined) => {
+const updateElement = ($parent: Element, $element: Element, node: ChildNode, oldNode: ChildNode | undefined, eventProxy: EventProxy) => {
   if (node === oldNode) return
 
   if (oldNode == null) {
-    $parent.appendChild(createElement(node))
+    $parent.appendChild(createElement(node, eventProxy))
   }
   else if (node == null) {
     $parent.removeChild($element)
   }
   else if (node.type !== oldNode.type) {
-    $parent.replaceChild(createElement(node), $element)
+    $parent.replaceChild(createElement(node, eventProxy), $element)
   }
   else if (isVText(node)) {
     $element.nodeValue = node
   }
   else {
-    updateAttributes($element, node.attributes, oldNode.attributes!)
+    updateAttributes($element, node.attributes, oldNode.attributes!, eventProxy)
 
     const len = Math.max(node.children.length, oldNode.children!.length)
 
     for (let i = 0; i < len; i++) {
-      updateElement($element, $element.childNodes[i] as Element, node.children[i], oldNode.children![i])
+      updateElement($element, $element.childNodes[i] as Element, node.children[i], oldNode.children![i], eventProxy)
     }
   }
 }
 
-export type SetState<State> = (state: State) => void
-export type View<State> = (state: State, setState: SetState<State>) => VNode
+type SetState<State> = (state: State) => void
+export type View<State> = (state: State) => VNode
 
-export const app = <State>(initState: State, view: View<State>, container: Element) => {
+export type Middleware<State, ActionObject> = (setState: SetState<State>, getState: () => State) =>
+  (action: ActionObject, state: State) => void
+
+const defaultMiddleware: Middleware<any, any> = (setState) => (action, state) => {
+  if (action !== undefined) {
+    const newState = typeof action === 'function' ? action(state) : action
+    const isObject = newState === Object(newState)
+
+    setState(isObject ? { ...state as any, ...newState as any } : newState)
+  }
+}
+
+export const app = <State, ActionObject>(
+  initState: State,
+  view: View<State>,
+  container: Element,
+  middleware = defaultMiddleware as Middleware<State, ActionObject>,
+) => {
   let node: VNode | undefined
+  let rootState: State
+
+  const getState = () =>
+    rootState
 
   const setState = (state: State) => {
     const prevNode = node
-    node = view(state, setState)
+    rootState = state
+    node = view(state)
+    updateElement(container, container.firstChild as Element, node, prevNode, eventProxy)
+  }
 
-    updateElement(container, container.firstChild as Element, node, prevNode)
+  const dispatch = middleware(setState, getState)
+
+  const eventProxy = (event: Event) => {
+    const action = (event.currentTarget as ElementWithEvent)._events![event.type](event)
+    dispatch(action, rootState)
   }
 
   setState(initState)
