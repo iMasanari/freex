@@ -74,17 +74,25 @@ const createElement = (node: ChildNode<AnyObject>, eventProxy: EventProxy) => {
   }
 
   node.children.forEach((child) => {
-    $element.appendChild(createElement(child, eventProxy))
+    if (child != null) {
+      $element.appendChild(createElement(child, eventProxy))
+    }
   })
 
   return $element
 }
 
-const updateElement = ($parent: Element, $element: Element, node: ChildNode, oldNode: ChildNode | undefined, eventProxy: EventProxy) => {
+const updateElement = (
+  $parent: Element,
+  $element: Element,
+  node: ChildNode | undefined,
+  oldNode: ChildNode | undefined,
+  eventProxy: EventProxy,
+) => {
   if (node === oldNode) return
 
   if (oldNode == null) {
-    $parent.appendChild(createElement(node, eventProxy))
+    $parent.insertBefore(createElement(node!, eventProxy), $element)
   }
   else if (node == null) {
     $parent.removeChild($element)
@@ -99,9 +107,18 @@ const updateElement = ($parent: Element, $element: Element, node: ChildNode, old
     updateAttributes($element, node.attributes, oldNode.attributes!, eventProxy)
 
     const len = Math.max(node.children.length, oldNode.children!.length)
+    let domIndex = 0
 
     for (let i = 0; i < len; i++) {
-      updateElement($element, $element.childNodes[i] as Element, node.children[i], oldNode.children![i], eventProxy)
+      const child = node.children[i]
+      const oldChild = oldNode.children![i]
+      const $childNode = $element.childNodes[domIndex] as Element
+
+      updateElement($element, $childNode, child, oldChild, eventProxy)
+
+      if (child != null) {
+        ++domIndex
+      }
     }
   }
 }

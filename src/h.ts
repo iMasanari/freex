@@ -10,7 +10,7 @@ declare global {
 export interface VNode<Attributes extends object = {}> {
   type: string
   attributes: Attributes
-  children: ChildNode[]
+  children: (ChildNode | undefined)[]
 }
 
 export type VText = string & { [P in keyof VNode]?: undefined }
@@ -18,7 +18,7 @@ export type VText = string & { [P in keyof VNode]?: undefined }
 export type ChildNode<Attributes extends object = {}> = VNode<Attributes> | VText
 
 export interface Component<P extends object = {}> {
-  (props: P, children: ChildNode[]): VNode<P>
+  (props: P, children: (ChildNode | undefined)[]): VNode<P>
 }
 
 const ARR = [] as ReadonlyArray<unknown>
@@ -26,8 +26,8 @@ const ARR = [] as ReadonlyArray<unknown>
 const flat = <T>(array: (T | T[])[]) =>
   ARR.concat(...array) as T[]
 
-const isChild = (child: ChildNode) =>
-  child != null && child !== '' && typeof child !== 'boolean'
+const normalizeChild = (child: ChildNode) =>
+  child != null && child !== '' && typeof child !== 'boolean' ? child : undefined
 
 const emptyObject = {}
 
@@ -38,7 +38,7 @@ export const h = <Attributes extends object = {}>(
 ): VNode<Attributes> => ({
   type,
   attributes: attributes || emptyObject as Attributes,
-  children: flat(children).filter(isChild)
+  children: flat(children).map(normalizeChild),
 })
 
 export default h
