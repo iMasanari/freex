@@ -32,13 +32,16 @@ const normalizeChild = (child: ChildNode) =>
 const emptyObject = {}
 
 export const h = <Attributes extends object = {}>(
-  type: string,
+  type: string | Component<Attributes>,
   attributes: Attributes | null,
-  ...children: (ChildNode | ChildNode[])[]
-): VNode<Attributes> => ({
-  type,
-  attributes: attributes || emptyObject as Attributes,
-  children: flat(children).map(normalizeChild),
-})
+  ...childNodes: (ChildNode | ChildNode[])[]
+): VNode<Attributes> => {
+  attributes = attributes || emptyObject as Attributes
+  const children = flat(childNodes).map(normalizeChild)
+
+  return typeof type === 'function'
+    ? type(attributes, children)
+    : { type, attributes, children }
+}
 
 export default h

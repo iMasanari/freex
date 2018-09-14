@@ -11,10 +11,15 @@ const increment = () =>
   (state: State) =>
     ({ count: state.count + 1 })
 
+const Counter = (props: { count: number }) =>
+  <div>
+    <span>{props.count}</span>
+    <button onclick={increment}>+</button>
+  </div>
+
 const view = (state: State) =>
   <div>
-    <span>{state.count}</span>
-    <button onclick={increment}>+</button>
+    <Counter count={state.count} />
   </div>
 
 app(initState, view, document.getElementById('app')!)

@@ -127,10 +127,11 @@ type SetState<State> = (state: State) => void
 export type View<State> = (state: State) => VNode
 
 export type Middleware<State, ActionObject> = (setState: SetState<State>, getState: () => State) =>
-  (action: ActionObject, state: State) => void
+  (action: ActionObject) => void
 
-const defaultMiddleware: Middleware<any, any> = (setState) => (action, state) => {
+const defaultMiddleware: Middleware<any, any> = (setState, getState) => (action) => {
   if (action !== undefined) {
+    const state = getState()
     const newState = typeof action === 'function' ? action(state) : action
     const isObject = newState === Object(newState)
 
@@ -161,7 +162,7 @@ export const app = <State, ActionObject>(
 
   const eventProxy = (event: Event) => {
     const action = (event.currentTarget as ElementWithEvent)._events![event.type](event)
-    dispatch(action, rootState)
+    dispatch(action)
   }
 
   setState(initState)
