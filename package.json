@@ -1,8 +1,9 @@
 {
-  "name": "simple-v-dom",
-  "version": "1.0.0",
+  "name": "freex",
+  "version": "0.1.0",
   "description": "",
-  "main": "index.js",
+  "main": "dist/freex.js",
+  "module": "dist/freex.mjs.js",
   "scripts": {
     "build": "rollup -c"
   },
