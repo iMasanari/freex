@@ -32,6 +32,7 @@ const setEvent = ($target: ElementWithEvent, name: string, value: any, eventProx
 const setAttribute = ($target: Element, name: string, value: any, eventProxy: EventProxy) => {
   if (name[0] === 'o' || name[1] === 'n') {
     setEvent($target, name, value, eventProxy)
+    return
   }
 
   const isEmpty = value == null || value === false
