@@ -138,21 +138,19 @@ export const app = <State, ActionObject>(
   const getState = () =>
     rootState
 
-  const setState = (state: State) => {
+  const render = (state: State) => {
     const prevNode = node
     rootState = state
     node = view(state)
     updateElement(container, container.firstChild as Element, node, prevNode, eventProxy)
   }
 
-  const dispatch = store(setState, getState)
-
   const eventProxy = (event: Event) => {
     const action = (event.currentTarget as ElementWithEvent)._events![event.type](event)
     dispatch(action)
   }
 
-  dispatch()
+  const dispatch = store(render, getState)
 }
 
 export default app

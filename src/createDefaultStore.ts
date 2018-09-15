@@ -1,24 +1,18 @@
-type SetState<State> = (state: State) => void
-
-export type Store<State, ActionObject> = (setState: SetState<State>, getState: () => State) =>
+export type Store<State, ActionObject> = (render: (state: State) => void, getState: () => State) =>
   (action?: ActionObject) => void
 
 export const createDefaultStore = <State>(initState: State): Store<State, ((state: State) => Partial<State>) | Partial<State>> =>
-  (setState, getState) => {
-    let isInit: boolean | undefined
+  (render, getState) => {
+    render(initState)
 
     return (action) => {
-      if (!isInit) {
-        isInit = true
-        setState(initState)
-      }
-      else if (action !== undefined) {
-        const state = getState()
-        const newState = typeof action === 'function' ? action(state) : action
-        const isObject = newState === Object(newState)
+      if (action === undefined) return
 
-        setState(isObject ? { ...state as any, ...newState as any } : newState)
-      }
+      const state = getState()
+      const newState = typeof action === 'function' ? action(state) : action
+      const isObject = newState === Object(newState)
+
+      render(isObject ? { ...state as any, ...newState as any } : newState)
     }
   }
 
