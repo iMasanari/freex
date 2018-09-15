@@ -1,11 +1,14 @@
 import h from './h'
 import app from './app'
+import createDefaultStore from './createDefaultStore'
 
 const initState = {
   count: 0
 }
 
 type State = typeof initState
+
+const store = createDefaultStore(initState)
 
 const increment = () =>
   (state: State) =>
@@ -22,4 +25,4 @@ const view = (state: State) =>
     <Counter count={state.count} />
   </div>
 
-app(initState, view, document.getElementById('app')!)
+app(store, view, document.getElementById('app')!)
