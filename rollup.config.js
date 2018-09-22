@@ -6,7 +6,7 @@ import { readFileSync } from 'fs'
 const packages = JSON.parse(readFileSync('./package.json', 'utf-8'))
 
 export default {
-  input: './src/index.tsx',
+  input: './src/index.ts',
   output: [{
     file: packages.main,
     format: 'umd',
