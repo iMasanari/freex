@@ -4,8 +4,12 @@
   "description": "",
   "main": "dist/freex.js",
   "module": "dist/freex.mjs.js",
+  "types": "lib/index.d.ts",
   "scripts": {
-    "build": "rollup -c"
+    "build": "npm run build:dist && npm run build:lib",
+    "build:dist": "rollup -c",
+    "build:lib": "tsc -p . --target es2015 -d",
+    "clean": "rm -r dist/* lib/*"
   },
   "keywords": [],
   "author": "iMasanari",
